@@ -1,0 +1,16 @@
+body {
+    position: absolute;
+    bottom: 0;
+    background-image: url("background.png");
+    background-size: 800;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+}
+
+canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
