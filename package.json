@@ -9,6 +9,8 @@
     "parcel": "latest"
   },
   "dependencies": {
+    "@kaimerra-corp/kai-api": "^1.0.12",
+    "matter-js": "^0.18.0",
     "phaser": "^3.55.2"
   }
 }
