@@ -44,7 +44,8 @@ const everyN = (n, f) => {
     balls.push(ball);
 
     if (balls.length > 1000) {
-      Composite.remove([balls.shift()]);
+      const ball = balls.shift();
+      Composite.remove(engine.world, ball);
     }
   });
 
