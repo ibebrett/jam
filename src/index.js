@@ -34,6 +34,7 @@ const computeGravity = (counters) => {
   let sum = 0;
 
   for (let [c, n] of counters.entries()) {
+    n = Math.abs(n);
     x_sum += (counterPoints[c][0] - 300) * n;
     y_sum += (counterPoints[c][1] - 300) * n;
 
@@ -61,13 +62,13 @@ const computeGravity = (counters) => {
     const ball = Bodies.circle(
       300 + Math.random() * 100,
       300 + Math.random() * 100,
-      6,
+      12,
       {
         render: {
           sprite: {
             texture: aether,
-            xScale: 1.0,
-            yScale: 1.0,
+            xScale: 2.0,
+            yScale: 2.0,
           },
         },
         restitution: 1.0,
@@ -184,8 +185,8 @@ const computeGravity = (counters) => {
   let dir = [0, 1];
   const updateGravity = (counters) => {
     dir = computeGravity(counters);
-    engine.gravity.x = dir[0] * 100.0;
-    engine.gravity.y = dir[1] * 100.0;
+    engine.gravity.x = dir[0] * 1.0;
+    engine.gravity.y = dir[1] * 1.0;
   };
 
   // add all of the bodies to the world
@@ -215,11 +216,11 @@ const computeGravity = (counters) => {
     // Render the status of the connection.
     ctx.save();
     ctx.font = "12px serif";
-    ctx.fillStyle = "black";
+    ctx.strokeStyle = "black";
     ctx.fillText(
       `Connection Status: ${kai ? "Connected" : "Not Connected"}`,
-      20,
-      20
+      40,
+      40
     );
 
     // draw the arrow of gravity!
