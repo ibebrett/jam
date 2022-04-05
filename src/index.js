@@ -32,19 +32,19 @@ const computeGravity = (counters) => {
   let y_sum = 0;
 
   let sum = 0;
+  let abs;
 
   for (let [c, n] of counters.entries()) {
-    n = Math.abs(n);
     x_sum += (counterPoints[c][0] - 300) * n;
     y_sum += (counterPoints[c][1] - 300) * n;
 
-    sum += n;
+    sum += Math.abs(n);
   }
 
   x_sum /= sum;
   y_sum /= sum;
 
-  return [(x_sum / 280.0) * 2.0, (y_sum / 280.0) * 2.0];
+  return [x_sum / 280.0, y_sum / 280.0];
 };
 
 (async () => {
@@ -197,15 +197,19 @@ const computeGravity = (counters) => {
     let removed = [];
     for (const p of pairs) {
       // TODO: Clean This Up
+
+      const rc = counters[Math.floor(Math.random() * counters.length)];
       if (collectorIds.includes(p.bodyA.id) && !removed.includes(p.bodyB.id)) {
         Composite.remove(engine.world, p.bodyB);
         removed.push(p.bodyB.id);
         kai && kai.incrementCounter(bodyToColor[p.bodyA.id], -1);
+        kai && kai.incrementCounter(bodyToColor[rc], 1);
       }
       if (collectorIds.includes(p.bodyB.id) && !removed.includes(p.bodyA.id)) {
         Composite.remove(engine.world, p.bodyA);
         removed.push(p.bodyA.id);
         kai && kai.incrementCounter(bodyToColor[p.bodyB.id], -1);
+        kai && kai.incrementCounter(bodyToColor[rc], 1);
       }
     }
   });
