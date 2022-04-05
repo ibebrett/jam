@@ -1,14 +1,5 @@
 import { Kai } from "@kaimerra-corp/kai-api/dist/index";
-import {
-  Mouse,
-  MouseConstraint,
-  Engine,
-  Render,
-  Runner,
-  Bodies,
-  Composite,
-  Events,
-} from "matter-js";
+import { Engine, Render, Runner, Bodies, Composite, Events } from "matter-js";
 
 import "../assets/css.css";
 import * as aether from "../assets/floweraethersingle.png";
@@ -25,30 +16,58 @@ const everyN = (n, f) => {
   };
 };
 
+const counters = ["fire", "water", "air", "earth", "aether"];
+const step = (2 * Math.PI) / 5;
+
+const counterPoints = {};
+
+let angle = 0;
+for (const k of counters) {
+  counterPoints[k] = [Math.sin(angle) * 280 + 300, Math.cos(angle) * 280 + 300];
+  angle += step;
+}
+
+const computeGravity = (counters) => {
+  let x_sum = 0;
+  let y_sum = 0;
+
+  let sum = 0;
+
+  for (let [c, n] of counters.entries()) {
+    x_sum += (counterPoints[c][0] - 300) * n;
+    y_sum += (counterPoints[c][1] - 300) * n;
+
+    sum += n;
+  }
+
+  x_sum /= sum;
+  y_sum /= sum;
+
+  return [(x_sum / 280.0) * 2.0, (y_sum / 280.0) * 2.0];
+};
+
 (async () => {
   let kai;
-  try { 
-    kai = await Kai.createForBrowser();
-  } catch (error) {
-    console.log("Could not connect to kaipod!");
-  }
+
+  const canvas = document.getElementById("canvas");
 
   // create an engine
   const engine = Engine.create();
 
   const balls = [];
 
-  const update = everyN(4, () => {
+  const update = everyN(8, () => {
+    // Add a ball.
     const ball = Bodies.circle(
-      Math.random() * 800,
-      200 - Math.random() * 1000,
-      12,
+      300 + Math.random() * 100,
+      300 + Math.random() * 100,
+      6,
       {
         render: {
           sprite: {
             texture: aether,
-            xScale: 2.0,
-            yScale: 2.0,
+            xScale: 1.0,
+            yScale: 1.0,
           },
         },
         restitution: 1.0,
@@ -67,24 +86,16 @@ const everyN = (n, f) => {
 
   // create a renderer
   const render = Render.create({
-    element: document.body,
+    canvas: canvas,
     engine: engine,
     options: {
       wireframes: false,
+      visible: false,
+      width: 600,
+      height: 600,
       background: "transparent",
     },
   });
-
-  const mouse = Mouse.create(render.canvas);
-
-  const mouseConstraint = MouseConstraint.create(engine, { mouse });
-
-  /*
-  Events.on(mouseConstraint, "mousedown", function (event) {
-    console.log(event);
-    engine.gravity.x = (event.mouse.absolute.x - 400) / 200.0;
-    engine.gravity.y = (event.mouse.absolute.y - 400) / 200.0;
-  });*/
 
   // create plinkers
   const plinkers = [];
@@ -105,32 +116,127 @@ const everyN = (n, f) => {
     flip = !flip;
   }
 
-  // create two boxes and a ground
+  // Create the boundaries
   /*
-  const balls = [];
-  for (let i = 0; i < 1000; ++i) {
-    balls.push(
-      Bodies.circle(Math.random() * 400, 50 - Math.random() * 2000, 12, {
-        render: {
-          sprite: {
-            texture: aether,
-            xScale: 2.0,
-            yScale: 2.0,
-          },
-        },
-        restitution: 1.0,
-      })
-    );
-  }*/
+  const boundaries = [];
+  const pointsArray = Object.values(counterPoints);
+  for (let i = 0; i < pointsArray.length; i++) {
+    console.log("hello");
+    const j = (i + 1) % pointsArray.length;
 
-  const ground = Bodies.rectangle(400, 600, 810, 60, {
+    const i_x = pointsArray[i][0] - 300;
+    const i_y = pointsArray[i][1] - 300;
+    const j_x = pointsArray[j][0] - 300;
+    const j_y = pointsArray[j][1] - 300;
+
+    const verts = Vertices.fromPath(`
+       M ${i_x} ${i_y}
+       L ${i_x * 10} ${i_y * 10}
+       L ${j_x * 10} ${j_y * 10}
+       L ${j_x} ${j_y} 
+    `);
+
+    console.log(verts);
+
+    boundaries.push(
+      Bodies.fromVertices(300, 300, verts, {
+        isStatic: true,
+        render: { fillStyle: "red" },
+      }));
+  }
+  console.log(boundaries);
+  */
+
+  // Create the collectors
+  let collectors = [];
+  const counterColors = {
+    fire: "red",
+    water: "blue",
+    air: "white",
+    earth: "green",
+    aether: "purple",
+  };
+  let bodyToColor = {};
+  for (let [counter, point] of Object.entries(counterPoints)) {
+    const b = Bodies.circle(point[0], point[1], 90, {
+      isStatic: true,
+      restitution: 0.5,
+      render: {
+        fillStyle: counterColors[counter],
+      },
+    });
+
+    bodyToColor[b.id] = counter;
+
+    collectors.push(b);
+  }
+
+  const collectorIds = collectors.map((m) => m.id);
+
+  // Create the boundaries.
+  // WIDTH = 800;
+  // HEIGHT = 600;
+  const ground = Bodies.rectangle(300, 400, 810, 60, {
     isStatic: true,
     restitution: 1.0,
   });
-  //const cieling = Bodies.rectangle(400, 10, 810, 60, { isStatic: true });
+
+  let dir = [0, 1];
+  const updateGravity = (counters) => {
+    dir = computeGravity(counters);
+    engine.gravity.x = dir[0] * 100.0;
+    engine.gravity.y = dir[1] * 100.0;
+  };
 
   // add all of the bodies to the world
-  Composite.add(engine.world, [ground, ...plinkers]);
+  Composite.add(engine.world, [...plinkers, ...collectors]);
+
+  Events.on(engine, "collisionStart", function (event) {
+    const pairs = event.pairs;
+    let removed = [];
+    for (const p of pairs) {
+      // TODO: Clean This Up
+      if (collectorIds.includes(p.bodyA.id) && !removed.includes(p.bodyB.id)) {
+        Composite.remove(engine.world, p.bodyB);
+        removed.push(p.bodyB.id);
+        kai && kai.incrementCounter(bodyToColor[p.bodyA.id], -1);
+      }
+      if (collectorIds.includes(p.bodyB.id) && !removed.includes(p.bodyA.id)) {
+        Composite.remove(engine.world, p.bodyA);
+        removed.push(p.bodyA.id);
+        kai && kai.incrementCounter(bodyToColor[p.bodyB.id], -1);
+      }
+    }
+  });
+
+  Events.on(render, "afterRender", () => {
+    const ctx = render.context;
+
+    // Render the status of the connection.
+    ctx.save();
+    ctx.font = "12px serif";
+    ctx.fillStyle = "black";
+    ctx.fillText(
+      `Connection Status: ${kai ? "Connected" : "Not Connected"}`,
+      20,
+      20
+    );
+
+    // draw the arrow of gravity!
+    /*
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = "steelblue";
+    ctx.fillStyle = "steelbllue"; // for the triangle fill
+    ctx.lineJoin = "butt";
+
+    ctx.beginPath();
+
+    ctx.moveTo(300, 300);
+    ctx.lineTo(300 + dir[0] * 200, 300 + dir[1] * 200);
+    ctx.stroke();
+    */
+    ctx.restore();
+  });
 
   // run the renderer
   Render.run(render);
@@ -138,12 +244,21 @@ const everyN = (n, f) => {
   // create runner
   const runner = Runner.create();
 
-  //engine.gravity.y = -1;
-  kai && kai.on("any", (counters) => {
-    const air = counters.get("air");
-    const earth = counters.get("earth");
-    engine.gravity.y = (earth - air) / air;
-  });
+  const connectKai = async () => {
+    if (kai) return;
+
+    try {
+      kai = await Kai.createForBrowser();
+      kai.on("any", (counters) => {
+        updateGravity(counters);
+      });
+      updateGravity(kai.getCounters());
+    } catch (error) {}
+  };
+
+  setInterval(() => {
+    connectKai();
+  }, 1000);
 
   // run the engine
   Runner.run(runner, engine);

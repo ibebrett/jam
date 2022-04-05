@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@kaimerra-corp/kai-api": "^1.0.12",
+    "dat.gui": "^0.7.9",
     "matter-js": "^0.18.0",
     "phaser": "^3.55.2"
   }
